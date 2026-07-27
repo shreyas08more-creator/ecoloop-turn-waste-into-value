@@ -1,0 +1,162 @@
+import { Link, useRouterState } from "@tanstack/react-router";
+import {
+  Home,
+  Recycle,
+  ScanLine,
+  Package,
+  MessageSquare,
+  User,
+  Bell,
+  Leaf,
+  Search,
+} from "lucide-react";
+import { motion } from "motion/react";
+import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
+
+const NAV = [
+  { to: "/", label: "Home", icon: Home },
+  { to: "/sell", label: "Sell Waste", icon: Recycle },
+  { to: "/scanner", label: "AI Scanner", icon: ScanLine },
+  { to: "/listings", label: "My Listings", icon: Package },
+  { to: "/messages", label: "Messages", icon: MessageSquare },
+  { to: "/profile", label: "Profile", icon: User },
+] as const;
+
+export function AppShell({
+  children,
+  title,
+  subtitle,
+}: {
+  children: ReactNode;
+  title?: string;
+  subtitle?: string;
+}) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  return (
+    <div className="min-h-dvh w-full bg-background text-foreground">
+      {/* Sidebar (desktop) */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-border bg-background/60 backdrop-blur-xl lg:flex">
+        <div className="flex items-center gap-2.5 px-6 pt-7 pb-8">
+          <div className="grid h-9 w-9 place-items-center rounded-xl gradient-eco eco-glow">
+            <Leaf className="h-5 w-5 text-black" strokeWidth={2.5} />
+          </div>
+          <div>
+            <div className="text-[15px] font-bold tracking-tight">EcoLoop</div>
+            <div className="text-[11px] text-muted-foreground -mt-0.5">Turn Waste Into Value</div>
+          </div>
+        </div>
+
+        <nav className="flex-1 space-y-1 px-3">
+          {NAV.map(({ to, label, icon: Icon }) => {
+            const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={cn(
+                  "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                  active
+                    ? "bg-surface text-foreground"
+                    : "text-muted-foreground hover:bg-surface/60 hover:text-foreground",
+                )}
+              >
+                {active && (
+                  <motion.span
+                    layoutId="nav-active"
+                    className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-primary"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <Icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="m-3 rounded-2xl border border-border bg-surface/60 p-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Leaf className="h-3.5 w-3.5 text-primary" />
+            Green Score
+          </div>
+          <div className="mt-1 text-2xl font-bold tracking-tight">842</div>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-background">
+            <div className="h-full w-[68%] rounded-full gradient-eco" />
+          </div>
+          <div className="mt-2 text-[11px] text-muted-foreground">158 pts to Platinum</div>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <div className="lg:pl-[248px]">
+        {/* Top bar */}
+        <header className="sticky top-0 z-20 border-b border-border/60 bg-background/70 backdrop-blur-xl">
+          <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-10">
+            <div className="min-w-0 flex-1">
+              {title ? (
+                <h1 className="truncate text-lg font-semibold tracking-tight sm:text-xl">
+                  {title}
+                </h1>
+              ) : (
+                <div className="hidden items-center gap-2 rounded-xl border border-border bg-surface/60 px-3 py-2 md:flex md:max-w-md">
+                  <Search className="h-4 w-4 text-muted-foreground" />
+                  <input
+                    placeholder="Search materials, vendors, listings…"
+                    className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                  />
+                  <kbd className="hidden rounded-md border border-border bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground md:inline">
+                    ⌘K
+                  </kbd>
+                </div>
+              )}
+              {subtitle ? (
+                <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>
+              ) : null}
+            </div>
+
+            <button className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-surface/60 text-muted-foreground transition hover:text-foreground">
+              <Bell className="h-[18px] w-[18px]" />
+            </button>
+            <div className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-surface/60 py-1 pr-3 pl-1">
+              <div className="grid h-8 w-8 place-items-center rounded-lg gradient-eco text-sm font-bold text-black">
+                S
+              </div>
+              <div className="hidden sm:block">
+                <div className="text-xs font-semibold leading-tight">Shreyas</div>
+                <div className="text-[10px] leading-tight text-muted-foreground">Gold member</div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="mx-auto w-full max-w-[1400px] px-4 pt-6 pb-28 sm:px-6 lg:px-10 lg:pb-10">
+          {children}
+        </main>
+      </div>
+
+      {/* Mobile bottom nav */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/85 backdrop-blur-xl lg:hidden">
+        <div className="mx-auto grid max-w-lg grid-cols-6">
+          {NAV.map(({ to, label, icon: Icon }) => {
+            const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={cn(
+                  "flex flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition",
+                  active ? "text-primary" : "text-muted-foreground",
+                )}
+              >
+                <Icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} />
+                <span className="truncate">{label.split(" ")[0]}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+    </div>
+  );
+}
