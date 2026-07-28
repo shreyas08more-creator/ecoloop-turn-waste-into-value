@@ -48,29 +48,29 @@
 :root {
   --radius: 1rem;
   /* EcoLoop dark palette (default) */
-  --background: oklch(0.145 0.006 285.8);       /* #09090B */
-  --foreground: oklch(1 0 0);                   /* #FFFFFF */
-  --surface: oklch(0.205 0.006 285.8);          /* #18181B card */
+  --background: oklch(0.145 0.006 285.8); /* #09090B */
+  --foreground: oklch(1 0 0); /* #FFFFFF */
+  --surface: oklch(0.205 0.006 285.8); /* #18181B card */
   --surface-elevated: oklch(0.235 0.006 285.8);
   --card: oklch(0.205 0.006 285.8);
   --card-foreground: oklch(1 0 0);
   --popover: oklch(0.205 0.006 285.8);
   --popover-foreground: oklch(1 0 0);
 
-  --primary: oklch(0.83 0.19 148);              /* #4ADE80 */
+  --primary: oklch(0.83 0.19 148); /* #4ADE80 */
   --primary-foreground: oklch(0.16 0.02 150);
-  --secondary: oklch(0.72 0.19 148);            /* #22C55E */
+  --secondary: oklch(0.72 0.19 148); /* #22C55E */
   --secondary-foreground: oklch(1 0 0);
 
   --muted: oklch(0.245 0.006 285.8);
-  --muted-foreground: oklch(0.72 0.01 286);     /* #A1A1AA */
+  --muted-foreground: oklch(0.72 0.01 286); /* #A1A1AA */
   --accent: oklch(0.28 0.02 150);
   --accent-foreground: oklch(0.92 0.14 148);
 
   --destructive: oklch(0.65 0.22 25);
   --destructive-foreground: oklch(1 0 0);
 
-  --border: oklch(0.27 0.006 285.8);            /* #27272A */
+  --border: oklch(0.27 0.006 285.8); /* #27272A */
   --input: oklch(0.27 0.006 285.8);
   --ring: oklch(0.83 0.19 148);
 
@@ -88,7 +88,8 @@
   * {
     border-color: var(--color-border);
   }
-  html, body {
+  html,
+  body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
@@ -113,7 +114,10 @@
 }
 
 @utility card-hover {
-  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+  transition:
+    transform 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
   &:hover {
     transform: translateY(-2px);
     border-color: color-mix(in oklab, var(--primary) 40%, var(--border));
@@ -134,5 +138,7 @@
 
 @utility scrollbar-hidden {
   scrollbar-width: none;
-  &::-webkit-scrollbar { display: none; }
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

@@ -22,7 +22,11 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "EcoLoop — Home" },
-      { name: "description", content: "Your AI recycling dashboard. Scan waste, get instant price estimates, book pickups with verified vendors." },
+      {
+        name: "description",
+        content:
+          "Your AI recycling dashboard. Scan waste, get instant price estimates, book pickups with verified vendors.",
+      },
       { property: "og:title", content: "EcoLoop — Home" },
       { property: "og:description", content: "AI-powered circular economy marketplace." },
     ],
@@ -40,20 +44,37 @@ const QUICK_ACTIONS = [
 ] as const;
 
 const VENDORS = [
-  { name: "GreenCycle Co.", rating: 4.9, distance: "1.2 km", price: "₹ 28/kg", today: true, material: "Plastic, Paper" },
-  { name: "EcoHarbor Recyclers", rating: 4.8, distance: "2.4 km", price: "₹ 34/kg", today: true, material: "E-Waste, Metal" },
-  { name: "ReNova Waste Hub", rating: 4.7, distance: "3.1 km", price: "₹ 22/kg", today: false, material: "Mixed" },
+  {
+    name: "GreenCycle Co.",
+    rating: 4.9,
+    distance: "1.2 km",
+    price: "₹ 28/kg",
+    today: true,
+    material: "Plastic, Paper",
+  },
+  {
+    name: "EcoHarbor Recyclers",
+    rating: 4.8,
+    distance: "2.4 km",
+    price: "₹ 34/kg",
+    today: true,
+    material: "E-Waste, Metal",
+  },
+  {
+    name: "ReNova Waste Hub",
+    rating: 4.7,
+    distance: "3.1 km",
+    price: "₹ 22/kg",
+    today: false,
+    material: "Mixed",
+  },
 ] as const;
 
 function HomePage() {
   return (
     <AppShell>
       {/* Welcome */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-6"
-      >
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <div className="text-xs font-medium uppercase tracking-[0.14em] text-primary/80">
           Monday · Nov 24
         </div>
@@ -86,7 +107,8 @@ function HomePage() {
               <span className="text-gradient-eco">earn more.</span>
             </h2>
             <p className="mt-4 max-w-md text-sm text-muted-foreground sm:text-base">
-              Our AI finds the best-priced verified recycler near you — book a pickup in under 30 seconds.
+              Our AI finds the best-priced verified recycler near you — book a pickup in under 30
+              seconds.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <GradientButton>
@@ -146,7 +168,9 @@ function HomePage() {
                 </div>
                 <div className="mt-6">
                   <div className="text-sm font-semibold">{title}</div>
-                  <div className="mt-0.5 text-[11px] leading-tight text-muted-foreground">{desc}</div>
+                  <div className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
+                    {desc}
+                  </div>
                 </div>
               </Link>
             </motion.div>
@@ -156,10 +180,31 @@ function HomePage() {
 
       {/* Stats row */}
       <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={<Coins className="h-5 w-5" />} label="Lifetime earnings" value="₹ 18,420" delta="+12%" accent />
-        <StatCard icon={<Recycle className="h-5 w-5" />} label="Waste recycled" value="146 kg" delta="+8%" />
-        <StatCard icon={<Leaf className="h-5 w-5" />} label="CO₂ saved" value="212 kg" delta="+14%" />
-        <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Pickup success" value="98%" delta="+2%" />
+        <StatCard
+          icon={<Coins className="h-5 w-5" />}
+          label="Lifetime earnings"
+          value="₹ 18,420"
+          delta="+12%"
+          accent
+        />
+        <StatCard
+          icon={<Recycle className="h-5 w-5" />}
+          label="Waste recycled"
+          value="146 kg"
+          delta="+8%"
+        />
+        <StatCard
+          icon={<Leaf className="h-5 w-5" />}
+          label="CO₂ saved"
+          value="212 kg"
+          delta="+14%"
+        />
+        <StatCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          label="Pickup success"
+          value="98%"
+          delta="+2%"
+        />
       </div>
 
       {/* Nearby vendors */}

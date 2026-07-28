@@ -8,7 +8,10 @@ export const Route = createFileRoute("/messages")({
   head: () => ({
     meta: [
       { title: "Messages · EcoLoop" },
-      { name: "description", content: "Chat with verified recyclers about your listings, pickups, and offers." },
+      {
+        name: "description",
+        content: "Chat with verified recyclers about your listings, pickups, and offers.",
+      },
       { property: "og:title", content: "Messages · EcoLoop" },
       { property: "og:description", content: "Talk directly with verified recyclers." },
     ],

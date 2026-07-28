@@ -18,7 +18,11 @@ export const Route = createFileRoute("/scanner")({
   head: () => ({
     meta: [
       { title: "AI Scanner · EcoLoop" },
-      { name: "description", content: "Point your camera at any waste. Our AI identifies the material and estimates its value in seconds." },
+      {
+        name: "description",
+        content:
+          "Point your camera at any waste. Our AI identifies the material and estimates its value in seconds.",
+      },
       { property: "og:title", content: "AI Scanner · EcoLoop" },
       { property: "og:description", content: "Point, scan, sell — instantly." },
     ],
@@ -50,7 +54,12 @@ function ScannerPage() {
                   <motion.div
                     initial={{ y: 0 }}
                     animate={{ y: 240 }}
-                    transition={{ duration: 1.6, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+                    transition={{
+                      duration: 1.6,
+                      repeat: Infinity,
+                      repeatType: "reverse",
+                      ease: "easeInOut",
+                    }}
                     className="absolute left-3 right-3 h-0.5 rounded-full gradient-eco shadow-[0_0_20px_var(--primary)]"
                   />
                 )}
@@ -117,7 +126,11 @@ function ScannerPage() {
                 </div>
 
                 <div className="mt-5 grid grid-cols-3 gap-3">
-                  <MiniStat icon={<Recycle className="h-4 w-4" />} label="Est. value" value="₹ 12" />
+                  <MiniStat
+                    icon={<Recycle className="h-4 w-4" />}
+                    label="Est. value"
+                    value="₹ 12"
+                  />
                   <MiniStat icon={<Leaf className="h-4 w-4" />} label="CO₂ saved" value="0.9 kg" />
                   <MiniStat icon={<Zap className="h-4 w-4" />} label="Energy saved" value="14 Wh" />
                 </div>
@@ -154,9 +167,7 @@ function ScannerPage() {
                     </div>
                   ))}
                 </div>
-                <GradientButton className="mt-4 w-full">
-                  Create listing from scan
-                </GradientButton>
+                <GradientButton className="mt-4 w-full">Create listing from scan</GradientButton>
               </div>
             </>
           )}

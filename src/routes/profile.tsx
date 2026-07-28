@@ -12,15 +12,7 @@ import {
   Zap,
   Target,
 } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  ResponsiveContainer,
-  XAxis,
-  Tooltip,
-  Bar,
-  BarChart,
-} from "recharts";
+import { Area, AreaChart, ResponsiveContainer, XAxis, Tooltip, Bar, BarChart } from "recharts";
 import { AppShell } from "@/components/app-shell";
 import { StatCard, SectionHeading } from "@/components/eco-ui";
 
@@ -28,7 +20,11 @@ export const Route = createFileRoute("/profile")({
   head: () => ({
     meta: [
       { title: "Profile · EcoLoop" },
-      { name: "description", content: "Your Green Score, lifetime earnings, achievements, and environmental impact — all in one place." },
+      {
+        name: "description",
+        content:
+          "Your Green Score, lifetime earnings, achievements, and environmental impact — all in one place.",
+      },
       { property: "og:title", content: "Profile · EcoLoop" },
       { property: "og:description", content: "Your impact, achievements, and earnings." },
     ],
@@ -116,10 +112,31 @@ function ProfilePage() {
 
       {/* Stats */}
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={<Coins className="h-5 w-5" />} label="Lifetime earnings" value="₹ 18,420" delta="+12%" accent />
-        <StatCard icon={<Recycle className="h-5 w-5" />} label="Waste recycled" value="146 kg" delta="+8%" />
-        <StatCard icon={<Leaf className="h-5 w-5" />} label="CO₂ saved" value="212 kg" delta="+14%" />
-        <StatCard icon={<TreeDeciduous className="h-5 w-5" />} label="Trees saved" value="9.4" delta="+3" />
+        <StatCard
+          icon={<Coins className="h-5 w-5" />}
+          label="Lifetime earnings"
+          value="₹ 18,420"
+          delta="+12%"
+          accent
+        />
+        <StatCard
+          icon={<Recycle className="h-5 w-5" />}
+          label="Waste recycled"
+          value="146 kg"
+          delta="+8%"
+        />
+        <StatCard
+          icon={<Leaf className="h-5 w-5" />}
+          label="CO₂ saved"
+          value="212 kg"
+          delta="+14%"
+        />
+        <StatCard
+          icon={<TreeDeciduous className="h-5 w-5" />}
+          label="Trees saved"
+          value="9.4"
+          delta="+3"
+        />
       </div>
 
       {/* Charts */}
@@ -127,7 +144,9 @@ function ProfilePage() {
         <div className="rounded-3xl border border-border bg-surface p-6 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">Monthly progress</div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                Monthly progress
+              </div>
               <div className="text-xl font-bold">28 kg recycled in November</div>
             </div>
             <div className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] text-primary">
@@ -143,7 +162,13 @@ function ProfilePage() {
                     <stop offset="100%" stopColor="#4ADE80" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="m" stroke="#71717A" fontSize={11} tickLine={false} axisLine={false} />
+                <XAxis
+                  dataKey="m"
+                  stroke="#71717A"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                />
                 <Tooltip
                   contentStyle={{
                     background: "#18181B",
@@ -153,7 +178,13 @@ function ProfilePage() {
                   }}
                   labelStyle={{ color: "#A1A1AA" }}
                 />
-                <Area type="monotone" dataKey="v" stroke="#4ADE80" strokeWidth={2.5} fill="url(#grad)" />
+                <Area
+                  type="monotone"
+                  dataKey="v"
+                  stroke="#4ADE80"
+                  strokeWidth={2.5}
+                  fill="url(#grad)"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -164,7 +195,13 @@ function ProfilePage() {
           <div className="mt-4 h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={CATEGORY}>
-                <XAxis dataKey="c" stroke="#71717A" fontSize={11} tickLine={false} axisLine={false} />
+                <XAxis
+                  dataKey="c"
+                  stroke="#71717A"
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                />
                 <Tooltip
                   contentStyle={{
                     background: "#18181B",
@@ -220,9 +257,7 @@ function ProfilePage() {
                   <div className="text-[11px] text-muted-foreground">{a.when}</div>
                 </div>
               </div>
-              {a.earn && (
-                <div className="shrink-0 text-sm font-bold text-primary">{a.earn}</div>
-              )}
+              {a.earn && <div className="shrink-0 text-sm font-bold text-primary">{a.earn}</div>}
             </div>
           ))}
         </div>

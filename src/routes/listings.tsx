@@ -9,7 +9,11 @@ export const Route = createFileRoute("/listings")({
   head: () => ({
     meta: [
       { title: "My Listings · EcoLoop" },
-      { name: "description", content: "Track your active recycling listings, pickups, and completed transactions in one dashboard." },
+      {
+        name: "description",
+        content:
+          "Track your active recycling listings, pickups, and completed transactions in one dashboard.",
+      },
       { property: "og:title", content: "My Listings · EcoLoop" },
       { property: "og:description", content: "All your listings, one dashboard." },
     ],
@@ -18,13 +22,49 @@ export const Route = createFileRoute("/listings")({
 });
 
 type Status = "pending" | "accepted" | "completed" | "cancelled";
-const LISTINGS: { material: string; weight: string; price: string; vendor: string; status: Status }[] = [
-  { material: "PET Plastic Bottles", weight: "3.2 kg", price: "₹ 96", vendor: "GreenCycle Co.", status: "accepted" },
-  { material: "Cardboard Boxes", weight: "8.5 kg", price: "₹ 128", vendor: "ReNova Waste Hub", status: "pending" },
-  { material: "Aluminium Cans", weight: "1.1 kg", price: "₹ 154", vendor: "MetalWorks Recycle", status: "completed" },
-  { material: "E-Waste (Laptop)", weight: "2.4 kg", price: "₹ 1,240", vendor: "EcoHarbor", status: "completed" },
+const LISTINGS: {
+  material: string;
+  weight: string;
+  price: string;
+  vendor: string;
+  status: Status;
+}[] = [
+  {
+    material: "PET Plastic Bottles",
+    weight: "3.2 kg",
+    price: "₹ 96",
+    vendor: "GreenCycle Co.",
+    status: "accepted",
+  },
+  {
+    material: "Cardboard Boxes",
+    weight: "8.5 kg",
+    price: "₹ 128",
+    vendor: "ReNova Waste Hub",
+    status: "pending",
+  },
+  {
+    material: "Aluminium Cans",
+    weight: "1.1 kg",
+    price: "₹ 154",
+    vendor: "MetalWorks Recycle",
+    status: "completed",
+  },
+  {
+    material: "E-Waste (Laptop)",
+    weight: "2.4 kg",
+    price: "₹ 1,240",
+    vendor: "EcoHarbor",
+    status: "completed",
+  },
   { material: "Mixed Paper", weight: "5.0 kg", price: "₹ 60", vendor: "—", status: "cancelled" },
-  { material: "Glass Bottles", weight: "6.3 kg", price: "₹ 88", vendor: "GreenCycle Co.", status: "pending" },
+  {
+    material: "Glass Bottles",
+    weight: "6.3 kg",
+    price: "₹ 88",
+    vendor: "GreenCycle Co.",
+    status: "pending",
+  },
 ];
 
 const TABS: (Status | "all")[] = ["all", "pending", "accepted", "completed", "cancelled"];

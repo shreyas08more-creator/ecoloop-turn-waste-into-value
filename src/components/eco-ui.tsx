@@ -101,7 +101,11 @@ export function GhostButton({
   );
 }
 
-export function StatusBadge({ status }: { status: "pending" | "accepted" | "completed" | "cancelled" }) {
+export function StatusBadge({
+  status,
+}: {
+  status: "pending" | "accepted" | "completed" | "cancelled";
+}) {
   const map = {
     pending: "bg-amber-500/10 text-amber-400 border-amber-500/30",
     accepted: "bg-blue-500/10 text-blue-400 border-blue-500/30",

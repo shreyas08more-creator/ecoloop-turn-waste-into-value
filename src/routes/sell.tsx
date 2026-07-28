@@ -20,7 +20,11 @@ export const Route = createFileRoute("/sell")({
   head: () => ({
     meta: [
       { title: "Sell Waste · EcoLoop" },
-      { name: "description", content: "Upload photos of your recyclable waste. Get instant AI-powered price estimates from verified vendors." },
+      {
+        name: "description",
+        content:
+          "Upload photos of your recyclable waste. Get instant AI-powered price estimates from verified vendors.",
+      },
       { property: "og:title", content: "Sell Waste · EcoLoop" },
       { property: "og:description", content: "List recyclables and get instant AI quotes." },
     ],
@@ -88,12 +92,28 @@ function SellPage() {
           <div className="rounded-3xl border border-border bg-surface p-6">
             <SectionHeading title="Listing details" />
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Material type" icon={<Sparkles className="h-4 w-4" />} value="Plastic (PET)" />
+              <Field
+                label="Material type"
+                icon={<Sparkles className="h-4 w-4" />}
+                value="Plastic (PET)"
+              />
               <Field label="Weight (kg)" icon={<Weight className="h-4 w-4" />} value="3.2" />
-              <Field label="Condition" icon={<CheckCircle2 className="h-4 w-4" />} value="Clean · sorted" />
-              <Field label="Preferred time" icon={<Clock className="h-4 w-4" />} value="Tomorrow · 10–12 AM" />
+              <Field
+                label="Condition"
+                icon={<CheckCircle2 className="h-4 w-4" />}
+                value="Clean · sorted"
+              />
+              <Field
+                label="Preferred time"
+                icon={<Clock className="h-4 w-4" />}
+                value="Tomorrow · 10–12 AM"
+              />
               <div className="sm:col-span-2">
-                <Field label="Pickup address" icon={<MapPin className="h-4 w-4" />} value="12 Marine Drive, Mumbai 400020" />
+                <Field
+                  label="Pickup address"
+                  icon={<MapPin className="h-4 w-4" />}
+                  value="12 Marine Drive, Mumbai 400020"
+                />
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-2">
@@ -136,19 +156,25 @@ function SellPage() {
 
             <div className="mt-4 grid grid-cols-2 gap-3">
               <div className="rounded-2xl border border-border bg-background p-4">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Est. price</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Est. price
+                </div>
                 <div className="mt-1 text-2xl font-bold text-primary">₹ 96</div>
                 <div className="text-[10px] text-muted-foreground">for 3.2 kg · ₹30/kg avg</div>
               </div>
               <div className="rounded-2xl border border-border bg-background p-4">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Category</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Category
+                </div>
                 <div className="mt-1 text-2xl font-bold">Type-1</div>
                 <div className="text-[10px] text-muted-foreground">Plastic bottles</div>
               </div>
             </div>
 
             <div className="mt-5">
-              <div className="mb-2 text-xs font-medium text-muted-foreground">Suggested vendors</div>
+              <div className="mb-2 text-xs font-medium text-muted-foreground">
+                Suggested vendors
+              </div>
               <div className="space-y-2">
                 {["GreenCycle Co.", "EcoHarbor Recyclers", "ReNova Waste Hub"].map((v) => (
                   <div

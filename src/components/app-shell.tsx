@@ -61,7 +61,7 @@ const INITIAL_NOTIFS: Notif[] = [
     id: "n4",
     icon: MessageSquare,
     title: "Message from ReNova Waste Hub",
-    desc: "\"Can we reschedule to Friday?\"",
+    desc: '"Can we reschedule to Friday?"',
     time: "Yesterday",
     tone: "info",
   },
@@ -216,8 +216,7 @@ function NotificationsBell() {
   const [notifs, setNotifs] = useState<Notif[]>(INITIAL_NOTIFS);
   const unread = notifs.filter((n) => n.unread).length;
 
-  const markAll = () =>
-    setNotifs((prev) => prev.map((n) => ({ ...n, unread: false })));
+  const markAll = () => setNotifs((prev) => prev.map((n) => ({ ...n, unread: false })));
   const markOne = (id: string) =>
     setNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)));
 
@@ -276,7 +275,12 @@ function NotificationsBell() {
                   n.unread && "bg-primary/[0.04]",
                 )}
               >
-                <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", toneClass(n.tone))}>
+                <div
+                  className={cn(
+                    "grid h-9 w-9 shrink-0 place-items-center rounded-xl",
+                    toneClass(n.tone),
+                  )}
+                >
                   <Icon className="h-4 w-4" strokeWidth={2.2} />
                 </div>
                 <div className="min-w-0 flex-1">
