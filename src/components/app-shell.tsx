@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Home,
   Recycle,
@@ -13,11 +13,14 @@ import {
   Coins,
   BadgeCheck,
   CheckCheck,
+  LogOut,
+  ChevronDown,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useAuth } from "@/hooks/use-auth";
 
 type Notif = {
   id: string;
@@ -86,6 +89,18 @@ export function AppShell({
   subtitle?: string;
 }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const handleLogout = async () => {
+    await signOut();
+    setShowUserMenu(false);
+    navigate({ to: "/login" });
+  };
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
+  const initials = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="min-h-dvh w-full bg-background text-foreground">
@@ -140,6 +155,19 @@ export function AppShell({
           </div>
           <div className="mt-2 text-[11px] text-muted-foreground">158 pts to Platinum</div>
         </div>
+
+        {/* Logout button (sidebar bottom) */}
+        {user && (
+          <div className="m-3 mt-0">
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+            >
+              <LogOut className="h-[18px] w-[18px]" strokeWidth={2} />
+              <span>Log out</span>
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Main content */}
@@ -170,15 +198,57 @@ export function AppShell({
             </div>
 
             <NotificationsBell />
-            <div className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-surface/60 py-1 pr-3 pl-1">
-              <div className="grid h-8 w-8 place-items-center rounded-lg gradient-eco text-sm font-bold text-black">
-                S
-              </div>
-              <div className="hidden sm:block">
-                <div className="text-xs font-semibold leading-tight">Shreyas</div>
-                <div className="text-[10px] leading-tight text-muted-foreground">Gold member</div>
-              </div>
-            </div>
+
+            {user ? (
+              <Popover open={showUserMenu} onOpenChange={setShowUserMenu}>
+                <PopoverTrigger asChild>
+                  <button className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-surface/60 py-1 pr-3 pl-1 transition hover:border-primary/30">
+                    <div className="grid h-8 w-8 place-items-center rounded-lg gradient-eco text-sm font-bold text-black">
+                      {initials}
+                    </div>
+                    <div className="hidden sm:block text-left">
+                      <div className="text-xs font-semibold leading-tight">{displayName}</div>
+                      <div className="text-[10px] leading-tight text-muted-foreground truncate max-w-[120px]">
+                        {user.email}
+                      </div>
+                    </div>
+                    <ChevronDown className="h-3 w-3 text-muted-foreground hidden sm:block" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="end"
+                  sideOffset={8}
+                  className="w-56 rounded-xl border-border bg-surface p-2"
+                >
+                  <div className="px-3 py-2 border-b border-border mb-1">
+                    <div className="text-sm font-semibold truncate">{displayName}</div>
+                    <div className="text-[11px] text-muted-foreground truncate">{user.email}</div>
+                  </div>
+                  <Link
+                    to="/profile"
+                    onClick={() => setShowUserMenu(false)}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-background"
+                  >
+                    <User className="h-4 w-4" />
+                    Profile
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-destructive transition hover:bg-destructive/10"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                  </button>
+                </PopoverContent>
+              </Popover>
+            ) : (
+              <Link
+                to="/login"
+                className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-surface/60 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/30 hover:bg-surface"
+              >
+                Sign in
+              </Link>
+            )}
           </div>
         </header>
 
