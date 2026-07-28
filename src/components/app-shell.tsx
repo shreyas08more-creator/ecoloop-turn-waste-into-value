@@ -9,10 +9,63 @@ import {
   Bell,
   Leaf,
   Search,
+  Truck,
+  Coins,
+  BadgeCheck,
+  CheckCheck,
 } from "lucide-react";
 import { motion } from "motion/react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+type Notif = {
+  id: string;
+  icon: typeof Bell;
+  title: string;
+  desc: string;
+  time: string;
+  unread?: boolean;
+  tone?: "eco" | "info" | "warn";
+};
+
+const INITIAL_NOTIFS: Notif[] = [
+  {
+    id: "n1",
+    icon: Truck,
+    title: "Pickup confirmed",
+    desc: "GreenCycle Co. arrives tomorrow, 10:30 AM.",
+    time: "2m ago",
+    unread: true,
+    tone: "eco",
+  },
+  {
+    id: "n2",
+    icon: Coins,
+    title: "Payout received",
+    desc: "₹ 340 credited for 8.2 kg plastic.",
+    time: "1h ago",
+    unread: true,
+    tone: "eco",
+  },
+  {
+    id: "n3",
+    icon: BadgeCheck,
+    title: "New verified vendor nearby",
+    desc: "EcoHarbor Recyclers — 2.4 km away.",
+    time: "5h ago",
+    unread: true,
+    tone: "info",
+  },
+  {
+    id: "n4",
+    icon: MessageSquare,
+    title: "Message from ReNova Waste Hub",
+    desc: "\"Can we reschedule to Friday?\"",
+    time: "Yesterday",
+    tone: "info",
+  },
+];
 
 const NAV = [
   { to: "/", label: "Home", icon: Home },
@@ -116,9 +169,7 @@ export function AppShell({
               ) : null}
             </div>
 
-            <button className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-surface/60 text-muted-foreground transition hover:text-foreground">
-              <Bell className="h-[18px] w-[18px]" />
-            </button>
+            <NotificationsBell />
             <div className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-surface/60 py-1 pr-3 pl-1">
               <div className="grid h-8 w-8 place-items-center rounded-lg gradient-eco text-sm font-bold text-black">
                 S
@@ -158,5 +209,98 @@ export function AppShell({
         </div>
       </nav>
     </div>
+  );
+}
+
+function NotificationsBell() {
+  const [notifs, setNotifs] = useState<Notif[]>(INITIAL_NOTIFS);
+  const unread = notifs.filter((n) => n.unread).length;
+
+  const markAll = () =>
+    setNotifs((prev) => prev.map((n) => ({ ...n, unread: false })));
+  const markOne = (id: string) =>
+    setNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)));
+
+  const toneClass = (tone?: Notif["tone"]) =>
+    tone === "eco"
+      ? "bg-primary/15 text-primary"
+      : tone === "warn"
+        ? "bg-amber-500/15 text-amber-400"
+        : "bg-surface text-foreground";
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}
+          className="relative grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-surface/60 text-muted-foreground transition hover:text-foreground"
+        >
+          <Bell className="h-[18px] w-[18px]" />
+          {unread > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full gradient-eco px-1 text-[9px] font-bold text-black ring-2 ring-background">
+              {unread}
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        sideOffset={10}
+        className="w-[min(92vw,380px)] rounded-2xl border-border bg-surface p-0"
+      >
+        <div className="flex items-center justify-between px-4 pt-4 pb-3">
+          <div>
+            <div className="text-sm font-semibold">Notifications</div>
+            <div className="text-[11px] text-muted-foreground">
+              {unread > 0 ? `${unread} new update${unread > 1 ? "s" : ""}` : "You're all caught up"}
+            </div>
+          </div>
+          <button
+            onClick={markAll}
+            disabled={unread === 0}
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-primary transition hover:bg-primary/10 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:hover:bg-transparent"
+          >
+            <CheckCheck className="h-3.5 w-3.5" />
+            Mark all read
+          </button>
+        </div>
+        <div className="max-h-[380px] overflow-y-auto border-t border-border">
+          {notifs.map((n) => {
+            const Icon = n.icon;
+            return (
+              <button
+                key={n.id}
+                onClick={() => markOne(n.id)}
+                className={cn(
+                  "flex w-full items-start gap-3 border-b border-border/60 px-4 py-3 text-left transition last:border-b-0 hover:bg-background/40",
+                  n.unread && "bg-primary/[0.04]",
+                )}
+              >
+                <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", toneClass(n.tone))}>
+                  <Icon className="h-4 w-4" strokeWidth={2.2} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="truncate text-[13px] font-semibold">{n.title}</div>
+                    {n.unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+                  </div>
+                  <div className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">
+                    {n.desc}
+                  </div>
+                  <div className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground/70">
+                    {n.time}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="border-t border-border px-4 py-2.5">
+          <button className="w-full rounded-lg py-1.5 text-center text-[11.5px] font-medium text-muted-foreground transition hover:text-foreground">
+            View all activity
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
