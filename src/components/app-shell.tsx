@@ -169,9 +169,7 @@ export function AppShell({
               ) : null}
             </div>
 
-            <button className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-surface/60 text-muted-foreground transition hover:text-foreground">
-              <Bell className="h-[18px] w-[18px]" />
-            </button>
+            <NotificationsBell />
             <div className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-surface/60 py-1 pr-3 pl-1">
               <div className="grid h-8 w-8 place-items-center rounded-lg gradient-eco text-sm font-bold text-black">
                 S
