@@ -9,10 +9,63 @@ import {
   Bell,
   Leaf,
   Search,
+  Truck,
+  Coins,
+  BadgeCheck,
+  CheckCheck,
 } from "lucide-react";
 import { motion } from "motion/react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+type Notif = {
+  id: string;
+  icon: typeof Bell;
+  title: string;
+  desc: string;
+  time: string;
+  unread?: boolean;
+  tone?: "eco" | "info" | "warn";
+};
+
+const INITIAL_NOTIFS: Notif[] = [
+  {
+    id: "n1",
+    icon: Truck,
+    title: "Pickup confirmed",
+    desc: "GreenCycle Co. arrives tomorrow, 10:30 AM.",
+    time: "2m ago",
+    unread: true,
+    tone: "eco",
+  },
+  {
+    id: "n2",
+    icon: Coins,
+    title: "Payout received",
+    desc: "₹ 340 credited for 8.2 kg plastic.",
+    time: "1h ago",
+    unread: true,
+    tone: "eco",
+  },
+  {
+    id: "n3",
+    icon: BadgeCheck,
+    title: "New verified vendor nearby",
+    desc: "EcoHarbor Recyclers — 2.4 km away.",
+    time: "5h ago",
+    unread: true,
+    tone: "info",
+  },
+  {
+    id: "n4",
+    icon: MessageSquare,
+    title: "Message from ReNova Waste Hub",
+    desc: "\"Can we reschedule to Friday?\"",
+    time: "Yesterday",
+    tone: "info",
+  },
+];
 
 const NAV = [
   { to: "/", label: "Home", icon: Home },
