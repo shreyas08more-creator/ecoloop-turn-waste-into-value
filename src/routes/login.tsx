@@ -1,6 +1,7 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { toast } from "sonner";
 import {
   Leaf,
   Mail,
@@ -16,6 +17,15 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    mode: search.mode === "signup" ? ("signup" as const) : undefined,
+  }),
+  beforeLoad: async () => {
+    const { data } = await import("@/lib/supabase").then(({ supabase }) => supabase.auth.getSession());
+    if (data.session) {
+      throw redirect({ to: "/" });
+    }
+  },
   head: () => ({
     meta: [
       { title: "EcoLoop — Login / Sign Up" },
@@ -29,65 +39,85 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const search = Route.useSearch();
+  const [isSignUp, setIsSignUp] = useState(search.mode === "signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
+  const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccessMessage(null);
-    setLoading(true);
+  useEffect(() => {
+    if (!loading && user) {
+      navigate({ to: "/" });
+    }
+  }, [loading, navigate, user]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmitting(true);
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password, fullName);
+        const { error, data } = await signUp(email, password, fullName);
+
         if (error) {
-          setError(error.message);
-        } else {
-          setSuccessMessage("Account created! Please check your email to verify your account.");
-          setIsSignUp(false);
-          setEmail("");
-          setPassword("");
-          setFullName("");
+          toast.error(error.message);
+          return;
         }
+
+        if (data.session) {
+          toast.success("Account created successfully.");
+          navigate({ to: "/" });
+          return;
+        }
+
+        toast.success("Account created. Please check your email to verify your account.");
+        setIsSignUp(false);
+        setPassword("");
       } else {
         const { error } = await signIn(email, password);
+
         if (error) {
-          setError(error.message);
-        } else {
-          navigate({ to: "/" });
+          toast.error(error.message);
+          return;
         }
+
+        toast.success("Signed in successfully.");
+        navigate({ to: "/" });
       }
     } catch {
-      setError("An unexpected error occurred. Please try again.");
+      toast.error("An unexpected error occurred. Please try again.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    setError(null);
     const { error } = await signInWithGoogle();
     if (error) {
-      setError(error.message);
+      toast.error(error.message);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-background px-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-5 py-4 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          Checking your session…
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative flex min-h-dvh w-full items-center justify-center overflow-hidden bg-background px-4 py-12">
-      {/* Background decorations */}
-      <div className="pointer-events-none absolute -top-40 -right-40 h-[600px] w-[600px] rounded-full bg-primary/8 blur-[100px]" />
+      <div className="pointer-events-none absolute -right-40 -top-40 h-[600px] w-[600px] rounded-full bg-primary/8 blur-[100px]" />
       <div className="pointer-events-none absolute -bottom-40 -left-40 h-[500px] w-[500px] rounded-full bg-secondary/6 blur-[100px]" />
-      <div className="pointer-events-none absolute top-1/2 left-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[80px]" />
+      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[80px]" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -95,15 +125,14 @@ function LoginPage() {
         transition={{ duration: 0.5 }}
         className="relative w-full max-w-md"
       >
-        {/* Logo & header */}
         <div className="mb-8 text-center">
-          <Link to="/" className="inline-flex items-center gap-2.5 mb-6">
+          <Link to="/login" search={{}} className="mb-6 inline-flex items-center gap-2.5">
             <div className="grid h-11 w-11 place-items-center rounded-xl gradient-eco eco-glow">
               <Leaf className="h-6 w-6 text-black" strokeWidth={2.5} />
             </div>
             <div className="text-left">
               <div className="text-lg font-bold tracking-tight">EcoLoop</div>
-              <div className="text-[11px] text-muted-foreground -mt-0.5">Turn Waste Into Value</div>
+              <div className="-mt-0.5 text-[11px] text-muted-foreground">Turn Waste Into Value</div>
             </div>
           </Link>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -116,13 +145,11 @@ function LoginPage() {
           </p>
         </div>
 
-        {/* Card */}
         <div className="rounded-3xl border border-border bg-surface/80 p-6 backdrop-blur-xl sm:p-8">
-          {/* Google OAuth */}
           <button
             onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm font-medium transition hover:bg-background hover:border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={submitting}
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-background/60 px-4 py-3 text-sm font-medium transition hover:border-primary/30 hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
@@ -145,27 +172,20 @@ function LoginPage() {
             Continue with Google
           </button>
 
-          {/* Divider */}
           <div className="my-6 flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />
             <span className="text-xs text-muted-foreground">or continue with email</span>
             <div className="h-px flex-1 bg-border" />
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name (sign up only) */}
             {isSignUp && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <label
-                  htmlFor="fullName"
-                  className="mb-1.5 block text-xs font-medium text-muted-foreground"
-                >
+                <label htmlFor="fullName" className="mb-1.5 block text-xs font-medium text-muted-foreground">
                   Full Name
                 </label>
                 <div className="relative">
@@ -174,7 +194,7 @@ function LoginPage() {
                     id="fullName"
                     type="text"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    onChange={(event) => setFullName(event.target.value)}
                     placeholder="Enter your full name"
                     className="w-full rounded-xl border border-border bg-background/60 py-3 pl-10 pr-4 text-sm outline-none transition placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
                   />
@@ -182,12 +202,8 @@ function LoginPage() {
               </motion.div>
             )}
 
-            {/* Email */}
             <div>
-              <label
-                htmlFor="email"
-                className="mb-1.5 block text-xs font-medium text-muted-foreground"
-              >
+              <label htmlFor="email" className="mb-1.5 block text-xs font-medium text-muted-foreground">
                 Email Address
               </label>
               <div className="relative">
@@ -196,7 +212,7 @@ function LoginPage() {
                   id="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(event) => setEmail(event.target.value)}
                   placeholder="you@example.com"
                   required
                   className="w-full rounded-xl border border-border bg-background/60 py-3 pl-10 pr-4 text-sm outline-none transition placeholder:text-muted-foreground/60 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
@@ -204,12 +220,8 @@ function LoginPage() {
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label
-                htmlFor="password"
-                className="mb-1.5 block text-xs font-medium text-muted-foreground"
-              >
+              <label htmlFor="password" className="mb-1.5 block text-xs font-medium text-muted-foreground">
                 Password
               </label>
               <div className="relative">
@@ -218,7 +230,7 @@ function LoginPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                   placeholder={isSignUp ? "Create a strong password" : "Enter your password"}
                   required
                   minLength={6}
@@ -226,7 +238,7 @@ function LoginPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowPassword((current) => !current)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -234,35 +246,12 @@ function LoginPage() {
               </div>
             </div>
 
-            {/* Error message */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive"
-              >
-                {error}
-              </motion.div>
-            )}
-
-            {/* Success message */}
-            {successMessage && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-xs text-primary"
-              >
-                {successMessage}
-              </motion.div>
-            )}
-
-            {/* Submit button */}
             <button
               type="submit"
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl gradient-eco py-3 text-sm font-semibold text-black transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              disabled={submitting}
+              className="flex w-full items-center justify-center gap-2 rounded-xl gradient-eco py-3 text-sm font-semibold text-black transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/25 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
             >
-              {loading ? (
+              {submitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
@@ -273,17 +262,12 @@ function LoginPage() {
             </button>
           </form>
 
-          {/* Toggle sign up / sign in */}
           <div className="mt-6 text-center text-sm text-muted-foreground">
             {isSignUp ? (
               <>
                 Already have an account?{" "}
                 <button
-                  onClick={() => {
-                    setIsSignUp(false);
-                    setError(null);
-                    setSuccessMessage(null);
-                  }}
+                  onClick={() => setIsSignUp(false)}
                   className="font-semibold text-primary transition hover:text-primary/80"
                 >
                   Sign in
@@ -293,11 +277,7 @@ function LoginPage() {
               <>
                 Don&apos;t have an account?{" "}
                 <button
-                  onClick={() => {
-                    setIsSignUp(true);
-                    setError(null);
-                    setSuccessMessage(null);
-                  }}
+                  onClick={() => setIsSignUp(true)}
                   className="font-semibold text-primary transition hover:text-primary/80"
                 >
                   Sign up
@@ -307,7 +287,6 @@ function LoginPage() {
           </div>
         </div>
 
-        {/* Bottom features */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -329,11 +308,9 @@ function LoginPage() {
           ))}
         </motion.div>
 
-        {/* Footer */}
         <p className="mt-6 text-center text-[11px] text-muted-foreground/60">
-          By continuing, you agree to EcoLoop&apos;s{" "}
-          <span className="underline cursor-pointer">Terms of Service</span> and{" "}
-          <span className="underline cursor-pointer">Privacy Policy</span>
+          By continuing, you agree to EcoLoop&apos;s <span className="cursor-pointer underline">Terms of Service</span> and{" "}
+          <span className="cursor-pointer underline">Privacy Policy</span>
         </p>
       </motion.div>
     </div>

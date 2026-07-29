@@ -15,8 +15,10 @@ import { AppShell } from "@/components/app-shell";
 import { GradientButton } from "@/components/eco-ui";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { formatCurrency } from "@/lib/marketplace-data";
+import { requireAuth } from "@/lib/auth-guard";
 
 export const Route = createFileRoute("/scanner")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "AI Scanner · EcoLoop" },

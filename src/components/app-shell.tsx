@@ -15,9 +15,12 @@ import {
   CheckCheck,
   LogOut,
   ChevronDown,
+  Menu,
+  LayoutDashboard,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/use-auth";
@@ -88,31 +91,38 @@ export function AppShell({
   title?: string;
   subtitle?: string;
 }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user, signOut } = useAuth();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const { user, signOut, displayName } = useAuth();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const handleLogout = async () => {
-    await signOut();
+    const { error } = await signOut();
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success("Logged out successfully.");
     setShowUserMenu(false);
-    navigate({ to: "/login" });
+    setShowMobileMenu(false);
+    navigate({ to: "/login", search: {} });
   };
 
-  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
-  const initials = displayName.charAt(0).toUpperCase();
+  const initials = (displayName || "U").charAt(0).toUpperCase();
 
   return (
     <div className="min-h-dvh w-full bg-background text-foreground">
-      {/* Sidebar (desktop) */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-border bg-background/60 backdrop-blur-xl lg:flex">
-        <div className="flex items-center gap-2.5 px-6 pt-7 pb-8">
+        <div className="flex items-center gap-2.5 px-6 pb-8 pt-7">
           <div className="grid h-9 w-9 place-items-center rounded-xl gradient-eco eco-glow">
             <Leaf className="h-5 w-5 text-black" strokeWidth={2.5} />
           </div>
           <div>
             <div className="text-[15px] font-bold tracking-tight">EcoLoop</div>
-            <div className="text-[11px] text-muted-foreground -mt-0.5">Turn Waste Into Value</div>
+            <div className="-mt-0.5 text-[11px] text-muted-foreground">Turn Waste Into Value</div>
           </div>
         </div>
 
@@ -156,30 +166,75 @@ export function AppShell({
           <div className="mt-2 text-[11px] text-muted-foreground">158 pts to Platinum</div>
         </div>
 
-        {/* Logout button (sidebar bottom) */}
-        {user && (
-          <div className="m-3 mt-0">
-            <button
-              onClick={handleLogout}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
-            >
-              <LogOut className="h-[18px] w-[18px]" strokeWidth={2} />
-              <span>Log out</span>
-            </button>
-          </div>
-        )}
+        <div className="m-3 mt-0 space-y-2">
+          <Link
+            to="/"
+            className="flex w-full items-center gap-2.5 rounded-xl border border-border bg-surface/60 px-3 py-2.5 text-sm font-medium text-foreground transition hover:border-primary/30"
+          >
+            <LayoutDashboard className="h-[18px] w-[18px]" strokeWidth={2} />
+            <span>Dashboard</span>
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
+          >
+            <LogOut className="h-[18px] w-[18px]" strokeWidth={2} />
+            <span>Log out</span>
+          </button>
+        </div>
       </aside>
 
-      {/* Main content */}
       <div className="lg:pl-[248px]">
-        {/* Top bar */}
         <header className="sticky top-0 z-20 border-b border-border/60 bg-background/70 backdrop-blur-xl">
           <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-10">
+            <div className="lg:hidden">
+              <Popover open={showMobileMenu} onOpenChange={setShowMobileMenu}>
+                <PopoverTrigger asChild>
+                  <button className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-surface/60 text-muted-foreground transition hover:text-foreground">
+                    <Menu className="h-5 w-5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="start" sideOffset={10} className="w-64 rounded-2xl border-border bg-surface p-2">
+                  <div className="mb-2 px-3 py-2">
+                    <div className="text-sm font-semibold">EcoLoop</div>
+                    <div className="text-[11px] text-muted-foreground">Turn Waste Into Value</div>
+                  </div>
+                  <div className="space-y-1">
+                    {NAV.map(({ to, label, icon: Icon }) => {
+                      const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+                      return (
+                        <Link
+                          key={to}
+                          to={to}
+                          onClick={() => setShowMobileMenu(false)}
+                          className={cn(
+                            "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
+                            active
+                              ? "bg-background text-foreground"
+                              : "text-muted-foreground hover:bg-background/70 hover:text-foreground",
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{label}</span>
+                        </Link>
+                      );
+                    })}
+                    <div className="my-2 border-t border-border" />
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-destructive transition hover:bg-destructive/10"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Log out</span>
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
             <div className="min-w-0 flex-1">
               {title ? (
-                <h1 className="truncate text-lg font-semibold tracking-tight sm:text-xl">
-                  {title}
-                </h1>
+                <h1 className="truncate text-lg font-semibold tracking-tight sm:text-xl">{title}</h1>
               ) : (
                 <div className="hidden items-center gap-2 rounded-xl border border-border bg-surface/60 px-3 py-2 md:flex md:max-w-md">
                   <Search className="h-4 w-4 text-muted-foreground" />
@@ -192,9 +247,7 @@ export function AppShell({
                   </kbd>
                 </div>
               )}
-              {subtitle ? (
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>
-              ) : null}
+              {subtitle ? <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p> : null}
             </div>
 
             <NotificationsBell />
@@ -202,28 +255,32 @@ export function AppShell({
             {user ? (
               <Popover open={showUserMenu} onOpenChange={setShowUserMenu}>
                 <PopoverTrigger asChild>
-                  <button className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-surface/60 py-1 pr-3 pl-1 transition hover:border-primary/30">
+                  <button className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-surface/60 py-1 pl-1 pr-3 transition hover:border-primary/30">
                     <div className="grid h-8 w-8 place-items-center rounded-lg gradient-eco text-sm font-bold text-black">
                       {initials}
                     </div>
-                    <div className="hidden sm:block text-left">
+                    <div className="hidden text-left sm:block">
                       <div className="text-xs font-semibold leading-tight">{displayName}</div>
-                      <div className="text-[10px] leading-tight text-muted-foreground truncate max-w-[120px]">
+                      <div className="max-w-[120px] truncate text-[10px] leading-tight text-muted-foreground">
                         {user.email}
                       </div>
                     </div>
-                    <ChevronDown className="h-3 w-3 text-muted-foreground hidden sm:block" />
+                    <ChevronDown className="hidden h-3 w-3 text-muted-foreground sm:block" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent
-                  align="end"
-                  sideOffset={8}
-                  className="w-56 rounded-xl border-border bg-surface p-2"
-                >
-                  <div className="px-3 py-2 border-b border-border mb-1">
-                    <div className="text-sm font-semibold truncate">{displayName}</div>
-                    <div className="text-[11px] text-muted-foreground truncate">{user.email}</div>
+                <PopoverContent align="end" sideOffset={8} className="w-56 rounded-xl border-border bg-surface p-2">
+                  <div className="mb-1 border-b border-border px-3 py-2">
+                    <div className="truncate text-sm font-semibold">{displayName}</div>
+                    <div className="truncate text-[11px] text-muted-foreground">{user.email}</div>
                   </div>
+                  <Link
+                    to="/"
+                    onClick={() => setShowUserMenu(false)}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-background"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Link>
                   <Link
                     to="/profile"
                     onClick={() => setShowUserMenu(false)}
@@ -242,22 +299,31 @@ export function AppShell({
                 </PopoverContent>
               </Popover>
             ) : (
-              <Link
-                to="/login"
-                className="flex shrink-0 items-center gap-2 rounded-xl border border-border bg-surface/60 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/30 hover:bg-surface"
-              >
-                Sign in
-              </Link>
+              <div className="flex shrink-0 items-center gap-2">
+                <Link
+                  to="/login"
+                  search={{}}
+                  className="rounded-xl border border-border bg-surface/60 px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary/30 hover:bg-surface"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/login"
+                  search={{ mode: "signup" } as never}
+                  className="rounded-xl gradient-eco px-4 py-2 text-sm font-semibold text-black transition hover:-translate-y-0.5"
+                >
+                  Sign up
+                </Link>
+              </div>
             )}
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-[1400px] px-4 pt-6 pb-28 sm:px-6 lg:px-10 lg:pb-10">
+        <main className="mx-auto w-full max-w-[1400px] px-4 pb-28 pt-6 sm:px-6 lg:px-10 lg:pb-10">
           {children}
         </main>
       </div>
 
-      {/* Mobile bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/85 backdrop-blur-xl lg:hidden">
         <div className="mx-auto grid max-w-lg grid-cols-6">
           {NAV.map(({ to, label, icon: Icon }) => {
@@ -284,11 +350,11 @@ export function AppShell({
 
 function NotificationsBell() {
   const [notifs, setNotifs] = useState<Notif[]>(INITIAL_NOTIFS);
-  const unread = notifs.filter((n) => n.unread).length;
+  const unread = notifs.filter((notif) => notif.unread).length;
 
-  const markAll = () => setNotifs((prev) => prev.map((n) => ({ ...n, unread: false })));
+  const markAll = () => setNotifs((prev) => prev.map((notif) => ({ ...notif, unread: false })));
   const markOne = (id: string) =>
-    setNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)));
+    setNotifs((prev) => prev.map((notif) => (notif.id === id ? { ...notif, unread: false } : notif)));
 
   const toneClass = (tone?: Notif["tone"]) =>
     tone === "eco"
@@ -317,7 +383,7 @@ function NotificationsBell() {
         sideOffset={10}
         className="w-[min(92vw,380px)] rounded-2xl border-border bg-surface p-0"
       >
-        <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <div className="flex items-center justify-between px-4 pb-3 pt-4">
           <div>
             <div className="text-sm font-semibold">Notifications</div>
             <div className="text-[11px] text-muted-foreground">
@@ -334,36 +400,27 @@ function NotificationsBell() {
           </button>
         </div>
         <div className="max-h-[380px] overflow-y-auto border-t border-border">
-          {notifs.map((n) => {
-            const Icon = n.icon;
+          {notifs.map((notif) => {
+            const Icon = notif.icon;
             return (
               <button
-                key={n.id}
-                onClick={() => markOne(n.id)}
+                key={notif.id}
+                onClick={() => markOne(notif.id)}
                 className={cn(
                   "flex w-full items-start gap-3 border-b border-border/60 px-4 py-3 text-left transition last:border-b-0 hover:bg-background/40",
-                  n.unread && "bg-primary/[0.04]",
+                  notif.unread && "bg-primary/[0.04]",
                 )}
               >
-                <div
-                  className={cn(
-                    "grid h-9 w-9 shrink-0 place-items-center rounded-xl",
-                    toneClass(n.tone),
-                  )}
-                >
+                <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", toneClass(notif.tone))}>
                   <Icon className="h-4 w-4" strokeWidth={2.2} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <div className="truncate text-[13px] font-semibold">{n.title}</div>
-                    {n.unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+                    <div className="truncate text-[13px] font-semibold">{notif.title}</div>
+                    {notif.unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
                   </div>
-                  <div className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">
-                    {n.desc}
-                  </div>
-                  <div className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground/70">
-                    {n.time}
-                  </div>
+                  <div className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">{notif.desc}</div>
+                  <div className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground/70">{notif.time}</div>
                 </div>
               </button>
             );

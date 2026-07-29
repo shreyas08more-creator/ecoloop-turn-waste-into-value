@@ -17,8 +17,10 @@ import { AppShell } from "@/components/app-shell";
 import { StatCard, SectionHeading } from "@/components/eco-ui";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { formatCurrency, formatWeight } from "@/lib/marketplace-data";
+import { requireAuth } from "@/lib/auth-guard";
 
 export const Route = createFileRoute("/profile")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "Profile · EcoLoop" },

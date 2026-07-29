@@ -18,9 +18,12 @@ import { AppShell } from "@/components/app-shell";
 import { GradientButton, GhostButton, SectionHeading, StatCard } from "@/components/eco-ui";
 import heroImg from "@/assets/hero-recycle.png";
 import { useMarketplace } from "@/hooks/use-marketplace";
+import { useAuth } from "@/hooks/use-auth";
 import { formatCurrency, formatWeight } from "@/lib/marketplace-data";
+import { requireAuth } from "@/lib/auth-guard";
 
 export const Route = createFileRoute("/")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "EcoLoop — Home" },
@@ -46,8 +49,8 @@ const QUICK_ACTIONS = [
 ] as const;
 
 function HomePage() {
+  const { displayName } = useAuth();
   const {
-    profile,
     vendors,
     monthlyWeight,
     totalEarned,
@@ -68,7 +71,7 @@ function HomePage() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <div className="text-xs font-medium uppercase tracking-[0.14em] text-primary/80">{today}</div>
         <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-          Hello {profile.name.split(" ")[0]} <span className="inline-block">👋</span>
+          Hello {displayName || "there"} <span className="inline-block">👋</span>
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           You've recycled {formatWeight(monthlyWeight)} this cycle. Keep the loop turning.

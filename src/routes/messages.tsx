@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { Search, Send, Paperclip, Smile } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { useMarketplace } from "@/hooks/use-marketplace";
+import { requireAuth } from "@/lib/auth-guard";
 
 export const Route = createFileRoute("/messages")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "Messages · EcoLoop" },

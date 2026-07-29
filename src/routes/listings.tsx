@@ -6,8 +6,10 @@ import { AppShell } from "@/components/app-shell";
 import { GradientButton, StatusBadge } from "@/components/eco-ui";
 import { useMarketplace } from "@/hooks/use-marketplace";
 import { formatCurrency, formatWeight, type ListingStatus } from "@/lib/marketplace-data";
+import { requireAuth } from "@/lib/auth-guard";
 
 export const Route = createFileRoute("/listings")({
+  beforeLoad: requireAuth,
   head: () => ({
     meta: [
       { title: "My Listings · EcoLoop" },
