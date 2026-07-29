@@ -17,6 +17,8 @@ import {
 import { AppShell } from "@/components/app-shell";
 import { GradientButton, GhostButton, SectionHeading, StatCard } from "@/components/eco-ui";
 import heroImg from "@/assets/hero-recycle.png";
+import { useMarketplace } from "@/hooks/use-marketplace";
+import { formatCurrency, formatWeight } from "@/lib/marketplace-data";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -43,50 +45,36 @@ const QUICK_ACTIONS = [
   { icon: Leaf, title: "Environmental Impact", desc: "See your CO₂ savings", to: "/profile" },
 ] as const;
 
-const VENDORS = [
-  {
-    name: "GreenCycle Co.",
-    rating: 4.9,
-    distance: "1.2 km",
-    price: "₹ 28/kg",
-    today: true,
-    material: "Plastic, Paper",
-  },
-  {
-    name: "EcoHarbor Recyclers",
-    rating: 4.8,
-    distance: "2.4 km",
-    price: "₹ 34/kg",
-    today: true,
-    material: "E-Waste, Metal",
-  },
-  {
-    name: "ReNova Waste Hub",
-    rating: 4.7,
-    distance: "3.1 km",
-    price: "₹ 22/kg",
-    today: false,
-    material: "Mixed",
-  },
-] as const;
-
 function HomePage() {
+  const {
+    profile,
+    vendors,
+    monthlyWeight,
+    totalEarned,
+    co2Saved,
+    totalWeight,
+    acceptVendorOffer,
+    pendingListings,
+  } = useMarketplace();
+
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+
   return (
     <AppShell>
-      {/* Welcome */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <div className="text-xs font-medium uppercase tracking-[0.14em] text-primary/80">
-          Monday · Nov 24
-        </div>
+        <div className="text-xs font-medium uppercase tracking-[0.14em] text-primary/80">{today}</div>
         <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-          Hello Shreyas <span className="inline-block">👋</span>
+          Hello {profile.name.split(" ")[0]} <span className="inline-block">👋</span>
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          You've recycled 12.4 kg this month. Keep the loop turning.
+          You've recycled {formatWeight(monthlyWeight)} this cycle. Keep the loop turning.
         </p>
       </motion.div>
 
-      {/* Hero card */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -111,9 +99,11 @@ function HomePage() {
               seconds.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <GradientButton>
-                <Truck className="h-4 w-4" /> Schedule Pickup
-              </GradientButton>
+              <Link to="/sell">
+                <GradientButton>
+                  <Truck className="h-4 w-4" /> Schedule Pickup
+                </GradientButton>
+              </Link>
               <Link to="/scanner">
                 <GhostButton>
                   <ScanLine className="h-4 w-4" /> Scan Waste
@@ -123,15 +113,13 @@ function HomePage() {
 
             <div className="mt-8 grid grid-cols-3 gap-4 border-t border-border pt-6">
               {[
-                { k: "12.4 kg", v: "Recycled" },
-                { k: "₹ 2,340", v: "Earned" },
-                { k: "18 kg", v: "CO₂ saved" },
-              ].map((s) => (
-                <div key={s.v}>
-                  <div className="text-lg font-bold sm:text-xl">{s.k}</div>
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    {s.v}
-                  </div>
+                { k: formatWeight(monthlyWeight), v: "Recycled" },
+                { k: formatCurrency(totalEarned), v: "Earned" },
+                { k: `${Math.round(co2Saved)} kg`, v: "CO₂ saved" },
+              ].map((stat) => (
+                <div key={stat.v}>
+                  <div className="text-lg font-bold sm:text-xl">{stat.k}</div>
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{stat.v}</div>
                 </div>
               ))}
             </div>
@@ -148,7 +136,6 @@ function HomePage() {
         </div>
       </motion.div>
 
-      {/* Quick actions */}
       <div className="mt-10">
         <SectionHeading eyebrow="Shortcuts" title="Quick actions" />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -168,9 +155,7 @@ function HomePage() {
                 </div>
                 <div className="mt-6">
                   <div className="text-sm font-semibold">{title}</div>
-                  <div className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
-                    {desc}
-                  </div>
+                  <div className="mt-0.5 text-[11px] leading-tight text-muted-foreground">{desc}</div>
                 </div>
               </Link>
             </motion.div>
@@ -178,36 +163,34 @@ function HomePage() {
         </div>
       </div>
 
-      {/* Stats row */}
       <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<Coins className="h-5 w-5" />}
           label="Lifetime earnings"
-          value="₹ 18,420"
-          delta="+12%"
+          value={formatCurrency(totalEarned)}
+          delta={`+${pendingListings.length} pending`}
           accent
         />
         <StatCard
           icon={<Recycle className="h-5 w-5" />}
           label="Waste recycled"
-          value="146 kg"
-          delta="+8%"
+          value={formatWeight(totalWeight)}
+          delta="Live"
         />
         <StatCard
           icon={<Leaf className="h-5 w-5" />}
           label="CO₂ saved"
-          value="212 kg"
-          delta="+14%"
+          value={`${Math.round(co2Saved)} kg`}
+          delta="Estimated"
         />
         <StatCard
           icon={<TrendingUp className="h-5 w-5" />}
-          label="Pickup success"
-          value="98%"
-          delta="+2%"
+          label="Verified vendors"
+          value={`${vendors.filter((vendor) => vendor.verified).length}`}
+          delta="Nearby"
         />
       </div>
 
-      {/* Nearby vendors */}
       <div className="mt-10">
         <SectionHeading
           eyebrow="Marketplace"
@@ -222,9 +205,9 @@ function HomePage() {
           }
         />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {VENDORS.map((v, i) => (
+          {vendors.slice(0, 3).map((vendor, i) => (
             <motion.div
-              key={v.name}
+              key={vendor.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.04 * i }}
@@ -236,38 +219,41 @@ function HomePage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <div className="truncate text-[15px] font-semibold">{v.name}</div>
-                    <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />
+                    <div className="truncate text-[15px] font-semibold">{vendor.name}</div>
+                    {vendor.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />}
                   </div>
                   <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
                     <span className="inline-flex items-center gap-0.5">
                       <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                      {v.rating}
+                      {vendor.rating}
                     </span>
                     <span>·</span>
                     <span className="inline-flex items-center gap-0.5">
                       <MapPin className="h-3 w-3" />
-                      {v.distance}
+                      {vendor.distanceKm.toFixed(1)} km
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 text-[11px] text-muted-foreground">{v.material}</div>
+              <div className="mt-4 text-[11px] text-muted-foreground">{vendor.materials.join(", ")}</div>
 
               <div className="mt-4 flex items-end justify-between">
                 <div>
                   <div className="text-xs text-muted-foreground">Est. price</div>
-                  <div className="text-xl font-bold">{v.price}</div>
+                  <div className="text-xl font-bold">₹ {vendor.pricePerKg}/kg</div>
                 </div>
-                {v.today && (
+                {vendor.availableToday && (
                   <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                     Pickup today
                   </span>
                 )}
               </div>
 
-              <button className="mt-4 w-full rounded-xl gradient-eco py-2.5 text-sm font-semibold text-black transition hover:-translate-y-0.5">
+              <button
+                onClick={() => acceptVendorOffer(vendor.name)}
+                className="mt-4 w-full rounded-xl gradient-eco py-2.5 text-sm font-semibold text-black transition hover:-translate-y-0.5"
+              >
                 Accept offer
               </button>
             </motion.div>

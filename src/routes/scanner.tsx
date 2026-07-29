@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Camera,
   ScanLine,
@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { GradientButton } from "@/components/eco-ui";
+import { useMarketplace } from "@/hooks/use-marketplace";
+import { formatCurrency } from "@/lib/marketplace-data";
 
 export const Route = createFileRoute("/scanner")({
   head: () => ({
@@ -31,12 +33,17 @@ export const Route = createFileRoute("/scanner")({
 });
 
 function ScannerPage() {
+  const navigate = useNavigate();
+  const { lastScan, vendors, createListing } = useMarketplace();
   const [scanned, setScanned] = useState(false);
+
+  const suggestedVendors = lastScan.suggestedVendors
+    .map((vendorName) => vendors.find((vendor) => vendor.name === vendorName))
+    .filter(Boolean);
 
   return (
     <AppShell title="AI Scanner" subtitle="Point, scan, sell — in under a second.">
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-        {/* Camera */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -88,7 +95,6 @@ function ScannerPage() {
           </div>
         </motion.div>
 
-        {/* Result */}
         <motion.div
           key={scanned ? "on" : "off"}
           initial={{ opacity: 0, y: 12 }}
@@ -116,12 +122,12 @@ function ScannerPage() {
                     <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
                       <CheckCircle2 className="h-3 w-3" /> Match found
                     </div>
-                    <h3 className="mt-3 text-2xl font-bold tracking-tight">Aluminium Can</h3>
-                    <p className="text-xs text-muted-foreground">Category · Non-ferrous metal</p>
+                    <h3 className="mt-3 text-2xl font-bold tracking-tight">{lastScan.material}</h3>
+                    <p className="text-xs text-muted-foreground">Category · {lastScan.category}</p>
                   </div>
                   <div className="text-right">
                     <div className="text-[10px] uppercase text-muted-foreground">Confidence</div>
-                    <div className="text-2xl font-bold text-primary">97%</div>
+                    <div className="text-2xl font-bold text-primary">{lastScan.confidence}%</div>
                   </div>
                 </div>
 
@@ -129,10 +135,18 @@ function ScannerPage() {
                   <MiniStat
                     icon={<Recycle className="h-4 w-4" />}
                     label="Est. value"
-                    value="₹ 12"
+                    value={formatCurrency(lastScan.estimatedValue)}
                   />
-                  <MiniStat icon={<Leaf className="h-4 w-4" />} label="CO₂ saved" value="0.9 kg" />
-                  <MiniStat icon={<Zap className="h-4 w-4" />} label="Energy saved" value="14 Wh" />
+                  <MiniStat
+                    icon={<Leaf className="h-4 w-4" />}
+                    label="CO₂ saved"
+                    value={`${lastScan.co2SavedKg} kg`}
+                  />
+                  <MiniStat
+                    icon={<Zap className="h-4 w-4" />}
+                    label="Energy saved"
+                    value={`${lastScan.energySavedWh} Wh`}
+                  />
                 </div>
               </div>
 
@@ -142,32 +156,48 @@ function ScannerPage() {
                   <span className="text-[11px] text-muted-foreground">Sorted by price</span>
                 </div>
                 <div className="space-y-2">
-                  {[
-                    { n: "MetalWorks Recycle", p: "₹ 14/pc", d: "1.4 km" },
-                    { n: "GreenCycle Co.", p: "₹ 12/pc", d: "1.2 km" },
-                    { n: "EcoHarbor", p: "₹ 11/pc", d: "2.4 km" },
-                  ].map((v) => (
-                    <div
-                      key={v.n}
-                      className="flex items-center justify-between rounded-2xl border border-border bg-background p-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="grid h-9 w-9 place-items-center rounded-xl gradient-eco text-black">
-                          <Recycle className="h-4 w-4" />
+                  {suggestedVendors.map((vendor) =>
+                    vendor ? (
+                      <div
+                        key={vendor.id}
+                        className="flex items-center justify-between rounded-2xl border border-border bg-background p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="grid h-9 w-9 place-items-center rounded-xl gradient-eco text-black">
+                            <Recycle className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold">{vendor.name}</div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {vendor.distanceKm.toFixed(1)} km
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="text-sm font-semibold">{v.n}</div>
-                          <div className="text-[11px] text-muted-foreground">{v.d}</div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-sm font-bold text-primary">₹ {vendor.pricePerKg}/kg</div>
+                          <ArrowRight className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-sm font-bold text-primary">{v.p}</div>
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </div>
-                  ))}
+                    ) : null,
+                  )}
                 </div>
-                <GradientButton className="mt-4 w-full">Create listing from scan</GradientButton>
+                <GradientButton
+                  onClick={() => {
+                    createListing({
+                      material: lastScan.material,
+                      weightKg: 1,
+                      condition: "Scanned via AI",
+                      preferredTime: "Today · Flexible",
+                      pickupAddress: "12 Marine Drive, Mumbai 400020",
+                      source: "scan",
+                      vendor: suggestedVendors[0]?.name,
+                    });
+                    navigate({ to: "/listings" });
+                  }}
+                  className="mt-4 w-full"
+                >
+                  Create listing from scan
+                </GradientButton>
               </div>
             </>
           )}
@@ -177,7 +207,7 @@ function ScannerPage() {
   );
 }
 
-function MiniStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function MiniStat({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-border bg-background p-3">
       <div className="flex items-center gap-1.5 text-muted-foreground">{icon}</div>

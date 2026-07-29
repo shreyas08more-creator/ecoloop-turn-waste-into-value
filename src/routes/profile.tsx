@@ -15,6 +15,8 @@ import {
 import { Area, AreaChart, ResponsiveContainer, XAxis, Tooltip, Bar, BarChart } from "recharts";
 import { AppShell } from "@/components/app-shell";
 import { StatCard, SectionHeading } from "@/components/eco-ui";
+import { useMarketplace } from "@/hooks/use-marketplace";
+import { formatCurrency, formatWeight } from "@/lib/marketplace-data";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -56,17 +58,11 @@ const ACHIEVEMENTS = [
   { icon: Target, name: "Consistent", desc: "12-week streak" },
 ];
 
-const ACTIVITY = [
-  { t: "Sold 3.2 kg of PET plastic to GreenCycle Co.", when: "2h ago", earn: "+₹96" },
-  { t: "Scanned Aluminium can — 97% match", when: "5h ago" },
-  { t: "Pickup scheduled with EcoHarbor", when: "Yesterday" },
-  { t: "Achievement unlocked: Green Guardian", when: "2d ago" },
-];
-
 function ProfilePage() {
+  const { profile, totalEarned, totalWeight, co2Saved, recentActivity, completedListings } = useMarketplace();
+
   return (
     <AppShell title="Profile">
-      {/* Header card */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -76,7 +72,7 @@ function ProfilePage() {
         <div className="relative flex flex-wrap items-center gap-6">
           <div className="relative">
             <div className="grid h-20 w-20 place-items-center rounded-3xl gradient-eco eco-glow text-3xl font-black text-black">
-              S
+              {profile.name.charAt(0)}
             </div>
             <span className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full border-2 border-surface bg-primary text-black">
               <Award className="h-3 w-3" strokeWidth={3} />
@@ -84,23 +80,23 @@ function ProfilePage() {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-2xl font-bold tracking-tight">Shreyas Kulkarni</h2>
+              <h2 className="text-2xl font-bold tracking-tight">{profile.name}</h2>
               <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
-                Gold Recycler
+                {profile.tier}
               </span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
-              Member since March 2024 · Mumbai, India
+              Member since {profile.memberSince} · {profile.location}
             </p>
             <div className="mt-3 flex items-center gap-4">
               <div>
                 <div className="text-[10px] uppercase text-muted-foreground">Green Score</div>
-                <div className="text-2xl font-bold text-primary">842</div>
+                <div className="text-2xl font-bold text-primary">{profile.greenScore}</div>
               </div>
               <div className="h-8 w-px bg-border" />
               <div>
                 <div className="text-[10px] uppercase text-muted-foreground">Rank</div>
-                <div className="text-2xl font-bold">#124</div>
+                <div className="text-2xl font-bold">#{profile.rank}</div>
               </div>
             </div>
           </div>
@@ -110,43 +106,39 @@ function ProfilePage() {
         </div>
       </motion.div>
 
-      {/* Stats */}
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<Coins className="h-5 w-5" />}
           label="Lifetime earnings"
-          value="₹ 18,420"
-          delta="+12%"
+          value={formatCurrency(totalEarned)}
+          delta={`+${completedListings.length} completed`}
           accent
         />
         <StatCard
           icon={<Recycle className="h-5 w-5" />}
           label="Waste recycled"
-          value="146 kg"
-          delta="+8%"
+          value={formatWeight(totalWeight)}
+          delta="Tracked"
         />
         <StatCard
           icon={<Leaf className="h-5 w-5" />}
           label="CO₂ saved"
-          value="212 kg"
-          delta="+14%"
+          value={`${Math.round(co2Saved)} kg`}
+          delta="Estimated"
         />
         <StatCard
           icon={<TreeDeciduous className="h-5 w-5" />}
           label="Trees saved"
-          value="9.4"
-          delta="+3"
+          value={`${profile.treesSaved}`}
+          delta="Growing"
         />
       </div>
 
-      {/* Charts */}
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
         <div className="rounded-3xl border border-border bg-surface p-6 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                Monthly progress
-              </div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Monthly progress</div>
               <div className="text-xl font-bold">28 kg recycled in November</div>
             </div>
             <div className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] text-primary">
@@ -162,13 +154,7 @@ function ProfilePage() {
                     <stop offset="100%" stopColor="#4ADE80" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis
-                  dataKey="m"
-                  stroke="#71717A"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                />
+                <XAxis dataKey="m" stroke="#71717A" fontSize={11} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{
                     background: "#18181B",
@@ -178,13 +164,7 @@ function ProfilePage() {
                   }}
                   labelStyle={{ color: "#A1A1AA" }}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="v"
-                  stroke="#4ADE80"
-                  strokeWidth={2.5}
-                  fill="url(#grad)"
-                />
+                <Area type="monotone" dataKey="v" stroke="#4ADE80" strokeWidth={2.5} fill="url(#grad)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -195,13 +175,7 @@ function ProfilePage() {
           <div className="mt-4 h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={CATEGORY}>
-                <XAxis
-                  dataKey="c"
-                  stroke="#71717A"
-                  fontSize={11}
-                  tickLine={false}
-                  axisLine={false}
-                />
+                <XAxis dataKey="c" stroke="#71717A" fontSize={11} tickLine={false} axisLine={false} />
                 <Tooltip
                   contentStyle={{
                     background: "#18181B",
@@ -217,7 +191,6 @@ function ProfilePage() {
         </div>
       </div>
 
-      {/* Achievements */}
       <div className="mt-8">
         <SectionHeading eyebrow="Milestones" title="Achievements" />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -239,13 +212,12 @@ function ProfilePage() {
         </div>
       </div>
 
-      {/* Recent activity */}
       <div className="mt-8">
         <SectionHeading title="Recent activity" />
         <div className="rounded-3xl border border-border bg-surface p-2">
-          {ACTIVITY.map((a, i) => (
+          {recentActivity.map((activity, i) => (
             <div
-              key={i}
+              key={`${activity.text}-${i}`}
               className="flex items-center justify-between gap-4 rounded-2xl p-4 transition hover:bg-background/60"
             >
               <div className="flex min-w-0 items-center gap-3">
@@ -253,11 +225,11 @@ function ProfilePage() {
                   <Recycle className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate text-sm">{a.t}</div>
-                  <div className="text-[11px] text-muted-foreground">{a.when}</div>
+                  <div className="truncate text-sm">{activity.text}</div>
+                  <div className="text-[11px] text-muted-foreground">{activity.when}</div>
                 </div>
               </div>
-              {a.earn && <div className="shrink-0 text-sm font-bold text-primary">{a.earn}</div>}
+              {activity.earn && <div className="shrink-0 text-sm font-bold text-primary">{activity.earn}</div>}
             </div>
           ))}
         </div>
