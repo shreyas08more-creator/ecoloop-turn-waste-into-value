@@ -9,9 +9,6 @@ import {
   Bell,
   Leaf,
   Search,
-  Truck,
-  Coins,
-  BadgeCheck,
   CheckCheck,
   LogOut,
   ChevronDown,
@@ -24,54 +21,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAuth } from "@/hooks/use-auth";
-
-type Notif = {
-  id: string;
-  icon: typeof Bell;
-  title: string;
-  desc: string;
-  time: string;
-  unread?: boolean;
-  tone?: "eco" | "info" | "warn";
-};
-
-const INITIAL_NOTIFS: Notif[] = [
-  {
-    id: "n1",
-    icon: Truck,
-    title: "Pickup confirmed",
-    desc: "GreenCycle Co. arrives tomorrow, 10:30 AM.",
-    time: "2m ago",
-    unread: true,
-    tone: "eco",
-  },
-  {
-    id: "n2",
-    icon: Coins,
-    title: "Payout received",
-    desc: "₹ 340 credited for 8.2 kg plastic.",
-    time: "1h ago",
-    unread: true,
-    tone: "eco",
-  },
-  {
-    id: "n3",
-    icon: BadgeCheck,
-    title: "New verified vendor nearby",
-    desc: "EcoHarbor Recyclers — 2.4 km away.",
-    time: "5h ago",
-    unread: true,
-    tone: "info",
-  },
-  {
-    id: "n4",
-    icon: MessageSquare,
-    title: "Message from ReNova Waste Hub",
-    desc: '"Can we reschedule to Friday?"',
-    time: "Yesterday",
-    tone: "info",
-  },
-];
+import { useGreenScore } from "@/hooks/use-green-score";
+import { useScoreEvents } from "@/hooks/use-green-score";
 
 const NAV = [
   { to: "/", label: "Home", icon: Home },
@@ -154,17 +105,7 @@ export function AppShell({
           })}
         </nav>
 
-        <div className="m-3 rounded-2xl border border-border bg-surface/60 p-4">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Leaf className="h-3.5 w-3.5 text-primary" />
-            Green Score
-          </div>
-          <div className="mt-1 text-2xl font-bold tracking-tight">842</div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-background">
-            <div className="h-full w-[68%] rounded-full gradient-eco" />
-          </div>
-          <div className="mt-2 text-[11px] text-muted-foreground">158 pts to Platinum</div>
-        </div>
+        <GreenScoreCard />
 
         <div className="m-3 mt-0 space-y-2">
           <Link
@@ -348,13 +289,53 @@ export function AppShell({
   );
 }
 
-function NotificationsBell() {
-  const [notifs, setNotifs] = useState<Notif[]>(INITIAL_NOTIFS);
-  const unread = notifs.filter((notif) => notif.unread).length;
+function GreenScoreCard() {
+  const { data: greenScore } = useGreenScore();
+  const score = greenScore?.score ?? 0;
+  const nextTier = 1000;
+  const progress = Math.min(100, Math.round((score / nextTier) * 100));
+  const remaining = Math.max(0, nextTier - score);
+  return (
+    <div className="m-3 rounded-2xl border border-border bg-surface/60 p-4">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Leaf className="h-3.5 w-3.5 text-primary" />
+        Green Score
+      </div>
+      <div className="mt-1 text-2xl font-bold tracking-tight">{score}</div>
+      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-background">
+        <div className="h-full rounded-full gradient-eco transition-all" style={{ width: `${progress}%` }} />
+      </div>
+      <div className="mt-2 text-[11px] text-muted-foreground">{remaining} pts to Platinum</div>
+    </div>
+  );
+}
 
-  const markAll = () => setNotifs((prev) => prev.map((notif) => ({ ...notif, unread: false })));
-  const markOne = (id: string) =>
-    setNotifs((prev) => prev.map((notif) => (notif.id === id ? { ...notif, unread: false } : notif)));
+function NotificationsBell() {
+  const { data: events } = useScoreEvents();
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+
+  const notifs: Notif[] = (events ?? []).map((event) => {
+    const Icon = EVENT_ICON[event.event_type] ?? EVENT_ICON.default;
+    const time = new Date(event.created_at).toLocaleDateString([], {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return {
+      id: event.id,
+      icon: Icon,
+      title: event.event_type.replace(/_/g, " "),
+      desc: event.description,
+      time,
+      unread: !readIds.has(event.id),
+      tone: event.points > 0 ? "eco" : "info",
+    } satisfies Notif;
+  });
+
+  const unread = notifs.filter((notif) => notif.unread).length;
+  const markAll = () => setReadIds(new Set(notifs.map((notif) => notif.id)));
+  const markOne = (id: string) => setReadIds((prev) => new Set(prev).add(id));
 
   const toneClass = (tone?: Notif["tone"]) =>
     tone === "eco"
@@ -400,36 +381,42 @@ function NotificationsBell() {
           </button>
         </div>
         <div className="max-h-[380px] overflow-y-auto border-t border-border">
-          {notifs.map((notif) => {
-            const Icon = notif.icon;
-            return (
-              <button
-                key={notif.id}
-                onClick={() => markOne(notif.id)}
-                className={cn(
-                  "flex w-full items-start gap-3 border-b border-border/60 px-4 py-3 text-left transition last:border-b-0 hover:bg-background/40",
-                  notif.unread && "bg-primary/[0.04]",
-                )}
-              >
-                <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", toneClass(notif.tone))}>
-                  <Icon className="h-4 w-4" strokeWidth={2.2} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="truncate text-[13px] font-semibold">{notif.title}</div>
-                    {notif.unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+          {notifs.length > 0 ? (
+            notifs.map((notif) => {
+              const Icon = notif.icon;
+              return (
+                <button
+                  key={notif.id}
+                  onClick={() => markOne(notif.id)}
+                  className={cn(
+                    "flex w-full items-start gap-3 border-b border-border/60 px-4 py-3 text-left transition last:border-b-0 hover:bg-background/40",
+                    notif.unread && "bg-primary/[0.04]",
+                  )}
+                >
+                  <div className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", toneClass(notif.tone))}>
+                    <Icon className="h-4 w-4" strokeWidth={2.2} />
                   </div>
-                  <div className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">{notif.desc}</div>
-                  <div className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground/70">{notif.time}</div>
-                </div>
-              </button>
-            );
-          })}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="truncate text-[13px] font-semibold capitalize">{notif.title}</div>
+                      {notif.unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />}
+                    </div>
+                    <div className="mt-0.5 line-clamp-2 text-[11.5px] text-muted-foreground">{notif.desc}</div>
+                    <div className="mt-1 text-[10px] uppercase tracking-wide text-muted-foreground/70">{notif.time}</div>
+                  </div>
+                </button>
+              );
+            })
+          ) : (
+            <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+              No notifications yet. Start recycling to see updates here.
+            </div>
+          )}
         </div>
         <div className="border-t border-border px-4 py-2.5">
-          <button className="w-full rounded-lg py-1.5 text-center text-[11.5px] font-medium text-muted-foreground transition hover:text-foreground">
+          <Link to="/profile" className="w-full rounded-lg py-1.5 text-center text-[11.5px] font-medium text-muted-foreground transition hover:text-foreground block">
             View all activity
-          </button>
+          </Link>
         </div>
       </PopoverContent>
     </Popover>

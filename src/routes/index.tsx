@@ -13,12 +13,15 @@ import {
   Leaf,
   TrendingUp,
   Coins,
+  Loader2,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { GradientButton, GhostButton, SectionHeading, StatCard } from "@/components/eco-ui";
 import heroImg from "@/assets/hero-recycle.png";
-import { useMarketplace } from "@/hooks/use-marketplace";
 import { useAuth } from "@/hooks/use-auth";
+import { useMarketplaceStats } from "@/hooks/use-marketplace-stats";
+import { useGreenScore } from "@/hooks/use-green-score";
+import { VENDORS } from "@/lib/vendors";
 import { formatCurrency, formatWeight } from "@/lib/marketplace-data";
 import { requireAuth } from "@/lib/auth-guard";
 
@@ -50,15 +53,14 @@ const QUICK_ACTIONS = [
 
 function HomePage() {
   const { displayName } = useAuth();
-  const {
-    vendors,
-    monthlyWeight,
-    totalEarned,
-    co2Saved,
-    totalWeight,
-    acceptVendorOffer,
-    pendingListings,
-  } = useMarketplace();
+  const { data: stats, isLoading, isError, refetch } = useMarketplaceStats();
+  const { data: greenScore } = useGreenScore();
+
+  const monthlyWeight = stats?.monthlyWeight ?? 0;
+  const totalEarned = stats?.totalEarned ?? 0;
+  const co2Saved = stats?.co2Saved ?? 0;
+  const totalWeight = stats?.totalWeight ?? 0;
+  const pendingCount = stats?.pendingCount ?? 0;
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -166,103 +168,121 @@ function HomePage() {
         </div>
       </div>
 
-      <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          icon={<Coins className="h-5 w-5" />}
-          label="Lifetime earnings"
-          value={formatCurrency(totalEarned)}
-          delta={`+${pendingListings.length} pending`}
-          accent
-        />
-        <StatCard
-          icon={<Recycle className="h-5 w-5" />}
-          label="Waste recycled"
-          value={formatWeight(totalWeight)}
-          delta="Live"
-        />
-        <StatCard
-          icon={<Leaf className="h-5 w-5" />}
-          label="CO₂ saved"
-          value={`${Math.round(co2Saved)} kg`}
-          delta="Estimated"
-        />
-        <StatCard
-          icon={<TrendingUp className="h-5 w-5" />}
-          label="Verified vendors"
-          value={`${vendors.filter((vendor) => vendor.verified).length}`}
-          delta="Nearby"
-        />
-      </div>
-
-      <div className="mt-10">
-        <SectionHeading
-          eyebrow="Marketplace"
-          title="Nearby vendors"
-          action={
-            <Link
-              to="/listings"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-            >
-              View all <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          }
-        />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {vendors.slice(0, 3).map((vendor, i) => (
-            <motion.div
-              key={vendor.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.04 * i }}
-              className="card-hover rounded-2xl border border-border bg-surface p-5"
-            >
-              <div className="flex items-start gap-3">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl gradient-eco text-black">
-                  <Recycle className="h-5 w-5" strokeWidth={2.5} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className="truncate text-[15px] font-semibold">{vendor.name}</div>
-                    {vendor.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />}
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <span className="inline-flex items-center gap-0.5">
-                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                      {vendor.rating}
-                    </span>
-                    <span>·</span>
-                    <span className="inline-flex items-center gap-0.5">
-                      <MapPin className="h-3 w-3" />
-                      {vendor.distanceKm.toFixed(1)} km
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 text-[11px] text-muted-foreground">{vendor.materials.join(", ")}</div>
-
-              <div className="mt-4 flex items-end justify-between">
-                <div>
-                  <div className="text-xs text-muted-foreground">Est. price</div>
-                  <div className="text-xl font-bold">₹ {vendor.pricePerKg}/kg</div>
-                </div>
-                {vendor.availableToday && (
-                  <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                    Pickup today
-                  </span>
-                )}
-              </div>
-
-              <button
-                onClick={() => acceptVendorOffer(vendor.name)}
-                className="mt-4 w-full rounded-xl gradient-eco py-2.5 text-sm font-semibold text-black transition hover:-translate-y-0.5"
-              >
-                Accept offer
-              </button>
-            </motion.div>
-          ))}
+      {isLoading ? (
+        <div className="mt-10 grid place-items-center rounded-3xl border border-border bg-surface/40 p-16">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </div>
+      ) : isError ? (
+        <div className="mt-10 grid place-items-center rounded-3xl border border-dashed border-border bg-surface/40 p-16 text-center">
+          <div className="text-sm font-semibold">Couldn't load marketplace data</div>
+          <button
+            onClick={() => refetch()}
+            className="mt-4 rounded-xl gradient-eco px-4 py-2 text-xs font-semibold text-black"
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              icon={<Coins className="h-5 w-5" />}
+              label="Lifetime earnings"
+              value={formatCurrency(totalEarned)}
+              delta={`+${pendingCount} pending`}
+              accent
+            />
+            <StatCard
+              icon={<Recycle className="h-5 w-5" />}
+              label="Waste recycled"
+              value={formatWeight(totalWeight)}
+              delta="Live"
+            />
+            <StatCard
+              icon={<Leaf className="h-5 w-5" />}
+              label="CO₂ saved"
+              value={`${Math.round(co2Saved)} kg`}
+              delta="Estimated"
+            />
+            <StatCard
+              icon={<TrendingUp className="h-5 w-5" />}
+              label="Green Score"
+              value={`${greenScore?.score ?? 0}`}
+              delta={`+${greenScore?.weekly_change ?? 0} this week`}
+            />
+          </div>
+
+          <div className="mt-10">
+            <SectionHeading
+              eyebrow="Marketplace"
+              title="Nearby vendors"
+              action={
+                <Link
+                  to="/listings"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                >
+                  View all <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              }
+            />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {VENDORS.slice(0, 3).map((vendor, i) => (
+                <motion.div
+                  key={vendor.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.04 * i }}
+                  className="card-hover rounded-2xl border border-border bg-surface p-5"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl gradient-eco text-black">
+                      <Recycle className="h-5 w-5" strokeWidth={2.5} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <div className="truncate text-[15px] font-semibold">{vendor.name}</div>
+                        {vendor.verified && <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />}
+                      </div>
+                      <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <span className="inline-flex items-center gap-0.5">
+                          <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                          {vendor.rating}
+                        </span>
+                        <span>·</span>
+                        <span className="inline-flex items-center gap-0.5">
+                          <MapPin className="h-3 w-3" />
+                          {vendor.distanceKm.toFixed(1)} km
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 text-[11px] text-muted-foreground">{vendor.materials.join(", ")}</div>
+
+                  <div className="mt-4 flex items-end justify-between">
+                    <div>
+                      <div className="text-xs text-muted-foreground">Est. price</div>
+                      <div className="text-xl font-bold">₹ {vendor.pricePerKg}/kg</div>
+                    </div>
+                    {vendor.availableToday && (
+                      <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                        Pickup today
+                      </span>
+                    )}
+                  </div>
+
+                  <Link
+                    to="/sell"
+                    className="mt-4 block w-full rounded-xl gradient-eco py-2.5 text-center text-sm font-semibold text-black transition hover:-translate-y-0.5"
+                  >
+                    List your waste
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </AppShell>
   );
 }

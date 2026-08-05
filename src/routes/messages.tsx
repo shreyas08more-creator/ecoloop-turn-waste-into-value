@@ -1,9 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { useMemo, useState } from "react";
-import { Search, Send, Paperclip, Smile } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, Send, Paperclip, Smile, Loader2, MessageSquare } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { useMarketplace } from "@/hooks/use-marketplace";
+import {
+  useConversations,
+  useConversationMessages,
+  useSendMessage,
+  useMarkRead,
+  type ConversationWithMeta,
+} from "@/hooks/use-messages";
 import { requireAuth } from "@/lib/auth-guard";
 
 export const Route = createFileRoute("/messages")({
@@ -23,24 +29,45 @@ export const Route = createFileRoute("/messages")({
 });
 
 function MessagesPage() {
-  const { threads, sendMessage, markThreadRead } = useMarketplace();
-  const [active, setActive] = useState(0);
+  const { data: conversations, isLoading: convLoading, isError: convError, refetch } = useConversations();
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState("");
 
-  const filteredThreads = useMemo(() => {
+  const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return threads;
-    return threads.filter((thread) => thread.vendor.toLowerCase().includes(normalized));
-  }, [query, threads]);
+    if (!normalized || !conversations) return conversations ?? [];
+    return conversations.filter((c) => c.other_name.toLowerCase().includes(normalized));
+  }, [query, conversations]);
 
-  const safeActive = Math.min(active, Math.max(filteredThreads.length - 1, 0));
-  const currentThread = filteredThreads[safeActive];
+  // Auto-select first conversation
+  useEffect(() => {
+    if (!activeId && filtered.length > 0) {
+      setActiveId(filtered[0].id);
+    }
+    if (activeId && !filtered.find((c) => c.id === activeId)) {
+      setActiveId(filtered[0]?.id ?? null);
+    }
+  }, [filtered, activeId]);
+
+  const current = filtered.find((c) => c.id === activeId) ?? null;
+  const { data: messages, isLoading: msgLoading } = useConversationMessages(activeId);
+  const sendMessage = useSendMessage();
+  const markRead = useMarkRead();
+
+  // Mark read when opening a conversation
+  useEffect(() => {
+    if (activeId && current && current.unread_count > 0) {
+      markRead.mutate(activeId);
+    }
+  }, [activeId, current?.unread_count]);
 
   const handleSend = () => {
-    if (!currentThread) return;
-    sendMessage(currentThread.id, draft);
-    setDraft("");
+    if (!activeId || !draft.trim()) return;
+    sendMessage.mutate(
+      { conversationId: activeId, body: draft.trim() },
+      { onSuccess: () => setDraft("") },
+    );
   };
 
   return (
@@ -56,76 +83,118 @@ function MessagesPage() {
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
-          <div className="space-y-1">
-            {filteredThreads.map((thread, i) => {
-              const lastMessage = thread.messages[thread.messages.length - 1];
-              return (
-                <button
-                  key={thread.id}
-                  onClick={() => {
-                    setActive(i);
-                    markThreadRead(thread.id);
-                  }}
-                  className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${
-                    i === safeActive ? "bg-background" : "hover:bg-background/50"
-                  }`}
-                >
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl gradient-eco text-sm font-bold text-black">
-                    {thread.vendor[0]}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <div className="truncate text-sm font-semibold">{thread.vendor}</div>
-                      <div className="text-[10px] text-muted-foreground">{lastMessage?.sentAt}</div>
+          {convLoading ? (
+            <div className="grid place-items-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : convError ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              Failed to load conversations.
+              <button onClick={() => refetch()} className="mt-2 block w-full text-primary">
+                Retry
+              </button>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="grid place-items-center py-12 text-center text-sm text-muted-foreground">
+              <MessageSquare className="mb-2 h-6 w-6" />
+              No conversations yet.
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {filtered.map((thread: ConversationWithMeta) => {
+                const isActive = thread.id === activeId;
+                return (
+                  <button
+                    key={thread.id}
+                    onClick={() => setActiveId(thread.id)}
+                    className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${
+                      isActive ? "bg-background" : "hover:bg-background/50"
+                    }`}
+                  >
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl gradient-eco text-sm font-bold text-black">
+                      {thread.other_name?.[0]?.toUpperCase() ?? "?"}
                     </div>
-                    <div className="truncate text-xs text-muted-foreground">{lastMessage?.text}</div>
-                  </div>
-                  {thread.unread > 0 && (
-                    <span className="grid h-5 min-w-5 place-items-center rounded-full gradient-eco px-1.5 text-[10px] font-bold text-black">
-                      {thread.unread}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="truncate text-sm font-semibold">{thread.other_name}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {thread.last_message_at
+                            ? new Date(thread.last_message_at).toLocaleDateString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : ""}
+                        </div>
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {thread.last_message_body ?? "No messages yet"}
+                      </div>
+                    </div>
+                    {thread.unread_count > 0 && (
+                      <span className="grid h-5 min-w-5 place-items-center rounded-full gradient-eco px-1.5 text-[10px] font-bold text-black">
+                        {thread.unread_count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="flex min-h-[600px] flex-col rounded-3xl border border-border bg-surface">
-          {currentThread ? (
+          {current ? (
             <>
               <div className="flex items-center gap-3 border-b border-border p-4">
                 <div className="grid h-10 w-10 place-items-center rounded-xl gradient-eco text-sm font-bold text-black">
-                  {currentThread.vendor[0]}
+                  {current.other_name?.[0]?.toUpperCase() ?? "?"}
                 </div>
                 <div>
-                  <div className="text-sm font-semibold">{currentThread.vendor}</div>
-                  <div className="text-[11px] text-primary">
-                    ● {currentThread.online ? "online" : "offline"}
-                  </div>
+                  <div className="text-sm font-semibold">{current.other_name}</div>
+                  <div className="text-[11px] text-primary">● online</div>
                 </div>
               </div>
 
               <div className="flex-1 space-y-3 overflow-y-auto p-6">
-                {currentThread.messages.map((message, i) => (
-                  <motion.div
-                    key={message.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.04 * i }}
-                    className={`flex ${message.me ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
-                        message.me
-                          ? "gradient-eco text-black"
-                          : "border border-border bg-background text-foreground"
-                      }`}
-                    >
-                      {message.text}
-                    </div>
-                  </motion.div>
-                ))}
+                {msgLoading ? (
+                  <div className="grid place-items-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                ) : messages && messages.length > 0 ? (
+                  messages.map((message, i) => {
+                    const isMe = message.sender_id === current.other_user_id ? false : true;
+                    return (
+                      <motion.div
+                        key={message.id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.03 * i }}
+                        className={`flex ${isMe ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
+                            isMe
+                              ? "gradient-eco text-black"
+                              : "border border-border bg-background text-foreground"
+                          }`}
+                        >
+                          {message.body}
+                          <div className="mt-1 text-[9px] opacity-60">
+                            {new Date(message.created_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                            {message.read_at && isMe && " · read"}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                ) : (
+                  <div className="grid place-items-center py-12 text-center text-sm text-muted-foreground">
+                    No messages yet. Say hello!
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-border p-3">
@@ -150,16 +219,24 @@ function MessagesPage() {
                   </button>
                   <button
                     onClick={handleSend}
-                    className="grid h-8 w-8 place-items-center rounded-xl gradient-eco text-black"
+                    disabled={!draft.trim() || sendMessage.isPending}
+                    className="grid h-8 w-8 place-items-center rounded-xl gradient-eco text-black disabled:opacity-50"
                   >
-                    <Send className="h-4 w-4" />
+                    {sendMessage.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
             </>
           ) : (
             <div className="grid min-h-[600px] place-items-center p-8 text-center text-sm text-muted-foreground">
-              No conversations found.
+              <div>
+                <MessageSquare className="mx-auto mb-3 h-8 w-8" />
+                Select a conversation to start chatting.
+              </div>
             </div>
           )}
         </div>
